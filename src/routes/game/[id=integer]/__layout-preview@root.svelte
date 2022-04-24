@@ -6,8 +6,6 @@
 
         session.game = stuff.game;
 
-        console.log(stuff);
-
         return { stuff };
     }
 </script>

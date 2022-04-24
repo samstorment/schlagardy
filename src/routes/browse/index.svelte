@@ -1,30 +1,12 @@
-<script lang="ts" context="module">
-    export async function load({ session, params, fetch }) {
-
-		// if (!session.user) return { status: 302, redirect: `/` };
-
-		const response = await fetch(`/api/game`);		
-
-		return {
-			status: response.status,
-			props: {
-				games: response.ok && (await response.json())
-			}
-		};
-	}
-</script>
-
-
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { session } from "$app/stores";
-	import Button from "$lib/components/Buttons/Button.svelte";
 	import ButtonLink from "$lib/components/Buttons/ButtonLink.svelte";
 	import LinkButton from "$lib/components/Buttons/LinkButton.svelte";
 	import type Game from "$lib/models/game.model";
 	import { dateTime, del } from "$lib/util";
 
-	export let games: Array<Game> = [];
+	export let games: Array<Game>;
 
 	async function onDelete(id: number) {
 		const res = await del(`/api/game/${id}`);
@@ -36,7 +18,7 @@
 <div id="browse">
 	<header>
 		<h1>{games.length === 0 ? "No Games Found" : "Games"}</h1>
-		<ButtonLink href="/create" style="width: max-content;">
+		<ButtonLink href="/create">
 			Create Game
 		</ButtonLink>
 	</header>
@@ -65,7 +47,9 @@
 					<a href={`/game/${g.id}/edit`}>
 						Edit Game
 					</a>
-					<LinkButton on:click={() => onDelete(g.id)}>Delete Game</LinkButton>
+					<LinkButton on:click={() => onDelete(g.id)}>
+						Delete Game
+					</LinkButton>
 				</div>
 			{/if}
 		</div>
@@ -85,12 +69,13 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		border-bottom: 1px solid lightgray;
+		border-bottom: 1px solid var(--clr-bg-dark);
 	}
 
 	.game-card {
-		box-shadow: 0 0 .85em 0 gray;
-		color: rgb(50, 50, 50);
+		border: 1px solid var(--clr-bg-dark);;
+		color: var(--clr-font);
+		background-color: var(--clr-bg-accent);
 		border-radius: .5em;
 	}
 	
@@ -113,12 +98,14 @@
 		display: flex;
 		gap: .5em;
 		padding: .25em .75em;
-		border-top: 1px solid lightgray;
+		border-top: 1px solid var(--clr-bg-dark);
+		color: var(--clr-font-accent);
+		font-size: .9rem;
 	}
 
 	b {
+		color: var(--clr-font);
 		font-size: 1.5rem;
-		color: black;
 	}
 
 	.game-stats {

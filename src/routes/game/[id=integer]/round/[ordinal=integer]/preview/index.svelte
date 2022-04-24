@@ -20,7 +20,8 @@
     import { session } from '$app/stores';
     import type Game from '$lib/models/game.model';
     import LinkButton from '$lib/components/Buttons/LinkButton.svelte';
-import { shuffle } from '$lib/util';
+    import { shuffle } from '$lib/util';
+    import { onMount } from 'svelte';
 
     export let game: Game;
     export let ordinal: number;
@@ -39,12 +40,15 @@ import { shuffle } from '$lib/util';
 
     $: disabled = !!activeCell;
 
+    function addPlayer() {
+        players = [...players, { name: "", score: 0, id: Math.random() }];
+    }
+
     function showAnswer() {
 
+        if (!activeCell ||   spin) return;
+
         round.board.categories[activeCol].cells[activeRow].opened = true;
-
-        if (spin) return;
-
         spin = !spin;
         showQuestion = !showQuestion;
 
@@ -66,19 +70,18 @@ import { shuffle } from '$lib/util';
     }
 
     async function goPrevious() {
-		ordinal--;
-		goto(`/game/${game.id}/round/${ordinal}/preview`);
+		goto(`/game/${game.id}/round/${ordinal - 1}/preview`);
 	}
 
 	async function goNext() {
-		ordinal++;
-		goto(`/game/${game.id}/round/${ordinal}/preview`);
+		goto(`/game/${game.id}/round/${ordinal + 1}/preview`);
 	}
 
 </script>
 
 <div id="page">
-    <div id="page-left">
+
+    <div id="page-left" transition:scale|local>
 
         <div 
             id="board"
@@ -108,7 +111,7 @@ import { shuffle } from '$lib/util';
                 <!-- <Overlay bind:activeCell bind:round {activeRow} {activeCol} /> -->
 
                 <!-- nesting at this depth prevents transition bugs?? -->
-                <div id="overlay" class:spin transition:scale={{duration: 1000}}>
+                <div id="overlay" class:spin transition:scale|local={{duration: 1000}}>
                     <button id="exit-button" on:click={closeOverlay} disabled={spin}>
                         <Icon icon="heroicons-solid:x" />
                     </button>
@@ -138,69 +141,80 @@ import { shuffle } from '$lib/util';
     </div>
 
     {#if showPlayers}
-        <div id="page-right" transition:scale|local>
+        <div id="page-right">
             <div id="player-controls">
-
-            <button 
-                id="add-player"
-                on:click={() => players = [...players, { name: "", score: 0, id: Math.random() }]}
+                
+                <button 
+                    id="add-player"
+                    on:click={addPlayer}
+                    {disabled}
                 >
-                <Icon icon="ant-design:user-add-outlined" />
-            </button>
-
-            <button on:click={() => players = shuffle(players)}>
-                <Icon icon='foundation:shuffle' />
-            </button>
-        </div>
-
+                    <Icon icon="ant-design:user-add-outlined" />
+                </button>
+                
+                <button on:click={() => players = shuffle(players)} {disabled}>
+                    <Icon icon='foundation:shuffle' />
+                </button>
+            </div>
+            
             {#each players as p, i (p.id)}
-                <div id="player-card" animate:flip={{duration: 1000}} transition:slide={{duration: 500}}>
+                <div id="player-card" animate:flip|local={{duration: 250}} transition:slide|local>
                     <!-- <label for={`player-${p.id}`}>Player {i + 1}</label> -->
-                    <input id={`player-${p.id}`} type="text" bind:value={p.name} placeholder={`Player ${i + 1}`} />
+                    <input id={`player-${p.id}`} type="text" bind:value={p.name} placeholder={`Player ${i + 1}`} {disabled} />
                     <button 
-                        id="delete-player" 
+                        id="delete-player"
+                        {disabled}
                         on:click={() => players = players.filter(ply => ply.id !== p.id)}
                     >
                         <Icon icon="bi:trash-fill" />
                     </button>
-                    <input type="number" bind:value={p.score} step={100} placeholder="Score" />
+                    <input type="number" bind:value={p.score} step={100} placeholder="Score" {disabled} />
                 </div>
             {/each}
         </div>
     {/if}
-
 </div>
 
 <style>
     #page {
         display: flex;
         flex: 1;
-        color: lightgray;
-        background-color: hsl(200, 15%, 15%);
-        overflow: auto;
+        margin: 1em;
+        color: var(--clr-font-accent);
+        background-color: var(--clr-bg);
+        border: 2px solid var(--clr-bg-dark);
+        border-radius: .5em;
+        overflow: hidden;
     }
 
     #page-left {
         flex: 1;
         display: flex;
         flex-direction: column;
+        overflow: auto;
     }
 
     #page-right {
-        box-shadow: -10px 0px 10px -10px black;
         padding: .5em;
+        
+        box-shadow: -10px 0px 10px -10px var(--clr-bg-dark);
+        border-left: 2px solid var(--clr-bg-dark);
+        
         display: flex;
         flex-direction: column;
-        gap: 1em;
-        overflow: auto;
-        position: sticky;
-        top: 0;
+        gap: 1.25em;
+        overflow-y: auto;
+        overflow-x: none;
+
+        width: 250px;
+        min-width: 200px;
     }
 
     #player-card {
         display: flex;
         flex-direction: column;
-        border: 1px solid lightgray;
+        border: 1px solid var(--clr-bg-dark);
+        background-color: var(--clr-bg-accent);
         padding: .5em;
         border-radius: .25em;
         gap: 1em;
@@ -220,6 +234,8 @@ import { shuffle } from '$lib/util';
         border-radius: .1em;
         display: flex;
         justify-content: center;
+        background-color: var(--clr-bg-accent);
+        border: 1px solid var(--clr-bg-dark);
     }
 
     #delete-player {
@@ -229,9 +245,9 @@ import { shuffle } from '$lib/util';
         transform: translateY(-50%);
         border-radius: 50%;
         border: none;
-        background-color: white;
-        color: black;
-        border: 1px solid black;
+        background-color: var(--clr-bg-accent);
+        color: var(--clr-font-accent);
+        border: 1px solid var(--clr-bg-dark);
         padding: .5em;
     }
 
@@ -239,18 +255,15 @@ import { shuffle } from '$lib/util';
         flex: 1;
         gap: 2px;
         display: grid;
-        background-color: black;
+        background-color: var(--clr-bg-dark);
         grid-auto-flow: column;
     }
 
     .category {
         text-align: center;
-        background-color: hsl(200, 15%, 15%);
+        background-color: var(--clr-bg);
         font-size: 2rem;
         font-weight: bold;
-        
-        filter: brightness(150%);
-
         position: sticky;
         top: 0;
     }
@@ -271,8 +284,8 @@ import { shuffle } from '$lib/util';
     #controls {
         display: flex;
         justify-content: center;
-        background-color: hsl(200, 15%, 15%);
-        box-shadow: 0 -10px 5px -10px black;
+        background-color: var(--clr-bg);
+        border-top: 2px solid var(--clr-bg-dark);
         padding: 1em;
         gap: 1em;
         position: sticky;
@@ -313,8 +326,9 @@ import { shuffle } from '$lib/util';
         font-size: xx-large;
         display: grid;
         place-content: center;
-        color: black;
+        color: var(--clr-font-dark);
         opacity: 100%;
+        background-color: var(--clr-bg-light);
     }
 
     #overlay-toggle {
